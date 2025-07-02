@@ -36,7 +36,7 @@ A comprehensive **Retrieval-Augmented Generation (RAG)** system for petroleum en
 
 ```bash
 # 1. Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/alallaqi/petroleum-agent-rag.git
 cd petroleum-agent-rag
 
 # 2. Create virtual environment
@@ -49,13 +49,17 @@ pip install -r Requirements.txt
 # 4. Install Ollama models
 ollama pull llama3.2:latest
 ollama pull mxbai-embed-large
+
+# 5. Create environment file
+cp env-example.txt .env
+# Edit .env file if needed (optional - defaults work fine)
 ```
 
 #### **Windows (PowerShell)**
 
 ```powershell
 # 1. Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/alallaqi/petroleum-agent-rag.git
 cd petroleum-agent-rag
 
 # 2. Create virtual environment
@@ -68,6 +72,10 @@ pip install -r Requirements.txt
 # 4. Install Ollama models
 ollama pull llama3.2:latest
 ollama pull mxbai-embed-large
+
+# 5. Create environment file
+Copy-Item env-example.txt .env
+# Edit .env file if needed (optional - defaults work fine)
 ```
 
 ---
@@ -173,11 +181,15 @@ python 5_website_scraper.py
 
 #### **macOS/Linux:**
 ```bash
+# Make sure virtual environment is activated
+source venv/bin/activate
 streamlit run 4_chatbot.py
 ```
 
 #### **Windows PowerShell:**
 ```powershell
+# Make sure virtual environment is activated
+.\venv\Scripts\Activate.ps1
 streamlit run 4_chatbot.py
 ```
 
