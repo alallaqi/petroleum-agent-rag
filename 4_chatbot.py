@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Import our existing search function
+# Import our existing search function and user manager
 import importlib.util
 import sys
 
@@ -16,8 +16,14 @@ spec = importlib.util.spec_from_file_location("retrieval_system", "3_retrieval_s
 retrieval_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(retrieval_module)
 
-# Get the search function
+# Load the user_manager.py module
+spec_user = importlib.util.spec_from_file_location("user_manager", "user_manager.py")
+user_module = importlib.util.module_from_spec(spec_user)
+spec_user.loader.exec_module(user_module)
+
+# Get the search function and user manager
 search_petroleum_knowledge = retrieval_module.search_petroleum_knowledge
+UserManager = user_module.UserManager
 
 #################################################################################################################################################################
 ###############################   STREAMLIT PETROLEUM AI CHATBOT   ############################################################################################
@@ -63,8 +69,81 @@ st.markdown("""
         border-radius: 0.5rem;
         margin: 1rem 0;
     }
+    .user-info-container {
+        background-color: #059669;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+        color: white;
+    }
+    .limit-warning {
+        background-color: #dc2626;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+        color: white;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+###############################   INITIALIZE USER MANAGER   ##################################################################################################
+
+@st.cache_resource
+def get_user_manager():
+    return UserManager()
+
+user_manager = get_user_manager()
+
+###############################   USER INTERFACE FUNCTIONS   ##############################################################################################
+
+def display_user_info():
+    """Display current user information in sidebar"""
+    current_user = user_manager.get_current_user()
+    usage_stats = user_manager.get_usage_stats()
+    
+    st.markdown("**👤 Current User:**")
+    if current_user:
+        user_type_emoji = "🔓" if current_user["user_type"] == "registered" else "🔒"
+        st.markdown(f"""
+        <div class="user-info-container">
+            <strong>{user_type_emoji} {current_user['name']}</strong><br>
+            Type: {current_user['user_type'].title()}<br>
+            Daily Limit: {current_user['daily_search_limit']}<br>
+            Used Today: {usage_stats.get('current_usage', 0)}<br>
+            Remaining: {usage_stats.get('remaining', 0)}
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # User switching
+    st.markdown("**🔄 Switch User:**")
+    all_users = user_manager.get_all_users()
+    user_options = {f"{user_data['name']} ({user_id})": user_id 
+                   for user_id, user_data in all_users.items()}
+    
+    selected_user_display = st.selectbox(
+        "Select User:",
+        options=list(user_options.keys()),
+        index=list(user_options.values()).index(user_manager.current_user_id),
+        key="user_selector"
+    )
+    
+    selected_user_id = user_options[selected_user_display]
+    if selected_user_id != user_manager.current_user_id:
+        user_manager.switch_user(selected_user_id)
+        st.rerun()
+
+def check_search_permission():
+    """Check if current user can perform a search"""
+    can_search, message = user_manager.can_user_search()
+    if not can_search:
+        st.markdown(f"""
+        <div class="limit-warning">
+            <strong>🚫 Search Limit Reached</strong><br>
+            {message}
+        </div>
+        """, unsafe_allow_html=True)
+        st.stop()
+    return True
 
 st.markdown('<div class="main-header">', unsafe_allow_html=True)
 st.title("🛢️ Petroleum Engineering AI Assistant")
@@ -121,7 +200,16 @@ def generate_response(question: str, search_results: list) -> str:
         return f"Error generating response: {e}"
 
 def process_question(question: str):
-    """Process a question and generate response"""
+    """Process a question and generate response with usage tracking"""
+    # Check search permission before processing
+    can_search, message = user_manager.can_user_search()
+    if not can_search:
+        st.error(f"🚫 {message}")
+        return
+    
+    # Increment usage counter
+    user_manager.increment_user_usage()
+    
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": question})
     
@@ -137,6 +225,9 @@ def process_question(question: str):
         "content": response,
         "search_results": search_results
     })
+    
+    # Force refresh to update user stats
+    st.rerun()
 
 ###############################   SESSION STATE INITIALIZATION   #########################################################################################
 
@@ -151,8 +242,25 @@ if "process_example" not in st.session_state:
 ###############################   SIDEBAR WITH EXAMPLE QUESTIONS   #######################################################################################
 
 with st.sidebar:
+    # User information at the top
+    display_user_info()
+    
+    st.divider()
+    
     st.header("🔍 Example Questions")
     st.markdown("Click any question to try it:")
+    
+    # Check if user can search before showing examples
+    can_search, search_message = user_manager.can_user_search()
+    if not can_search:
+        st.markdown(f"""
+        <div class="limit-warning">
+            <strong>🚫 Search Limit Reached</strong><br>
+            {search_message}
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"💡 {search_message}")
     
     example_questions = [
         "What is hydraulic fracturing?",
@@ -165,7 +273,7 @@ with st.sidebar:
     ]
     
     for question in example_questions:
-        if st.button(question, key=f"example_{question}"):
+        if st.button(question, key=f"example_{question}", disabled=not can_search):
             st.session_state.process_example = question
             st.rerun()
     
@@ -229,7 +337,16 @@ for message in st.session_state.messages:
 ###############################   USER INPUT   ###########################################################################################################
 
 # User input
-if prompt := st.chat_input("Ask about petroleum engineering..."):
+if prompt := st.chat_input("Ask about petroleum engineering...", disabled=not user_manager.can_user_search()[0]):
+    # Check permission before processing
+    can_search, message = user_manager.can_user_search()
+    if not can_search:
+        st.error(f"🚫 {message}")
+        st.stop()
+    
+    # Increment usage counter
+    user_manager.increment_user_usage()
+    
     # Display user message
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -262,6 +379,9 @@ if prompt := st.chat_input("Ask about petroleum engineering..."):
         "content": response,
         "search_results": search_results
     })
+    
+    # Force refresh to update user stats
+    st.rerun()
 
 ###############################   FOOTER   ################################################################################################################
 

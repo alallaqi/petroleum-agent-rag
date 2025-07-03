@@ -1,0 +1,25 @@
+{
+  "users": {
+    "john_doe": {
+      "name": "John Doe",
+      "user_type": "registered",
+      "daily_search_limit": 10,
+      "current_usage": 1,
+      "last_reset": "2025-07-03",
+      "active": true
+    },
+    "anonymous": {
+      "name": "Anonymous User",
+      "user_type": "anonymous",
+      "daily_search_limit": 1,
+      "current_usage": 1,
+      "last_reset": "2025-07-03",
+      "active": true
+    }
+  },
+  "settings": {
+    "default_user": "anonymous",
+    "reset_time": "00:00",
+    "timezone": "UTC"
+  }
+}
