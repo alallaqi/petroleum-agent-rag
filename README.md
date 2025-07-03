@@ -18,6 +18,9 @@ A comprehensive **Retrieval-Augmented Generation (RAG)** system for petroleum en
 ✅ **Query Enhancement** - Automatically improves search queries  
 ✅ **Source Citations** - Shows relevance scores and document sources  
 ✅ **Web Interface** - Professional Streamlit chatbot  
+✅ **🌍 Multilingual Support** - Arabic, French, German, English with RTL text support  
+✅ **👥 User Management** - Keyword-based usage tracking and limits  
+✅ **🔄 Smart Translation** - Automatic language detection and bidirectional translation  
 ✅ **Easy Setup** - Step-by-step installation for any platform  
 
 ---
@@ -50,7 +53,10 @@ pip install -r Requirements.txt
 ollama pull llama3.2:latest
 ollama pull mxbai-embed-large
 
-# 5. Create environment file
+# 5. Test multilingual support (optional)
+python language_translator.py
+
+# 6. Create environment file
 cp env-example.txt .env
 # Edit .env file if needed (optional - defaults work fine)
 ```
@@ -73,7 +79,10 @@ pip install -r Requirements.txt
 ollama pull llama3.2:latest
 ollama pull mxbai-embed-large
 
-# 5. Create environment file
+# 5. Test multilingual support (optional)
+python language_translator.py
+
+# 6. Create environment file
 Copy-Item env-example.txt .env
 # Edit .env file if needed (optional - defaults work fine)
 ```
@@ -95,8 +104,11 @@ petroleum-agent-rag/
 ├── 1_pdf_to_embeddings.py        # 📚 PDF processing & vectorization
 ├── 2_query_rewriter.py           # 🔄 Query enhancement system
 ├── 3_retrieval_system.py         # 🔍 Semantic search engine
-├── 4_chatbot.py                  # 💬 Streamlit web interface
+├── 4_chatbot.py                  # 💬 Streamlit web interface with multilingual support
 ├── 5_website_scraper.py          # 🕷️ Company website scraper
+├── language_translator.py        # 🌍 Multilingual translation system
+├── user_manager.py               # 👥 User management and keyword tracking
+├── users.json                    # 📊 User data and usage statistics
 ├── .env                          # 🔧 Environment configuration
 ├── env-example.txt               # 📝 Environment template
 ├── setup_windows.ps1             # 🪟 Windows PowerShell setup script
@@ -221,6 +233,41 @@ The system includes a **smart query enhancement component** (`2_query_rewriter.p
 
 ---
 
+## 🌍 **Multilingual Support**
+
+The system supports **Arabic**, **French**, **German**, and **English** with automatic language detection and bidirectional translation:
+
+### **How It Works:**
+- **🔍 Auto-Detection**: System automatically detects your question's language
+- **🔄 Smart Translation**: Translates to English for optimal search, then back to your language
+- **📱 RTL Support**: Proper right-to-left text display for Arabic
+- **⚡ Zero Latency**: English questions bypass translation for maximum speed
+
+### **Supported Languages:**
+| **Language** | **Code** | **Example Question** |
+|--|--|--|
+| 🇺🇸 **English** | `en` | "What is hydraulic fracturing?" |
+| 🇸🇦 **Arabic** | `ar` | "ما هو التكسير الهيدروليكي؟" |
+| 🇫🇷 **French** | `fr` | "Qu'est-ce que la fracturation hydraulique?" |
+| 🇩🇪 **German** | `de` | "Was ist hydraulisches Fracking?" |
+
+### **User Management & Keyword Tracking:**
+- **👤 User Switching**: Switch between registered and anonymous users
+- **📊 Keyword Limits**: Track petroleum-specific keyword usage (10/day for registered, 1/day for anonymous)
+- **🎯 Smart Counting**: Only petroleum-related questions consume keywords
+- **📈 Usage Statistics**: Real-time monitoring of keyword consumption
+
+### **Configuration:**
+Edit `.env` file to customize multilingual settings:
+```bash
+MULTILINGUAL_ENABLED=true
+MULTILINGUAL_SUPPORTED_LANGUAGES=ar,fr,en,de
+MULTILINGUAL_DEFAULT_LANGUAGE=en
+MULTILINGUAL_TRANSLATION_MODEL=llama3.2:latest
+```
+
+---
+
 ## 💬 **Using the Chatbot**
 
 1. **📝 Type questions** in the chat input (the system automatically enhances them!)
@@ -229,11 +276,27 @@ The system includes a **smart query enhancement component** (`2_query_rewriter.p
 4. **🔍 Try example questions** from the sidebar
 
 ### **Example Questions:**
+
+**English 🇺🇸:**
 - "What is hydraulic fracturing?"
 - "What services does our company provide?"
 - "How does horizontal drilling work?"
 - "Explain unconventional gas reservoirs"
-- "What training programs are available?"
+
+**Arabic 🇸🇦:**
+- "ما هو التكسير الهيدروليكي؟"
+- "كيف يعمل حفر البترول؟"
+- "ما هي خدمات الشركة؟"
+
+**French 🇫🇷:**
+- "Qu'est-ce que la fracturation hydraulique?"
+- "Comment fonctionne le forage pétrolier?"
+- "Quels sont les services de l'entreprise?"
+
+**German 🇩🇪:**
+- "Was ist hydraulisches Fracking?"
+- "Wie funktioniert die Ölbohrung?"
+- "Welche Dienstleistungen bietet das Unternehmen an?"
 
 ---
 
@@ -258,6 +321,20 @@ Copy-Item env-example.txt .env
 - `COMPANY_WEBSITE_URL` - Your company website to scrape (default: https://expsdz.com/)
 - `OLLAMA_LLM_MODEL` - LLM model for responses (default: llama3.2:latest)
 - `OLLAMA_EMBEDDING_MODEL` - Embedding model for search (default: mxbai-embed-large)
+
+**Multilingual Configuration:**
+- `MULTILINGUAL_ENABLED` - Enable/disable multilingual support (default: true)
+- `MULTILINGUAL_SUPPORTED_LANGUAGES` - Supported languages (default: ar,fr,en,de)
+- `MULTILINGUAL_DEFAULT_LANGUAGE` - Default language (default: en)
+- `MULTILINGUAL_TRANSLATION_MODEL` - Translation model (default: llama3.2:latest)
+- `MULTILINGUAL_ENABLE_MONITORING` - Enable translation monitoring (default: true)
+- `MULTILINGUAL_MAX_RETRIES` - Max translation retries (default: 3)
+
+**User Management:**
+- `USER_MANAGEMENT_ENABLED` - Enable user management (default: true)
+- `USER_MANAGEMENT_DEFAULT_USER` - Default user (default: john_doe)
+- `USER_MANAGEMENT_ANONYMOUS_KEYWORDS` - Anonymous user keywords (default: 1)
+- `USER_MANAGEMENT_REGISTERED_KEYWORDS` - Registered user keywords (default: 10)
 
 ### **Ollama Models**
 - **LLM**: `llama3.2:latest` (for responses)
@@ -335,6 +412,9 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - **chromadb** - Vector database
 - **pypdf** - PDF processing
 - **ollama** - Local LLM runtime
+- **langdetect** - Language detection for multilingual support
+- **requests** - HTTP requests for website scraping
+- **beautifulsoup4** - HTML parsing for content extraction
 
 ---
 
