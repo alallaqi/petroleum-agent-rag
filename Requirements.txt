@@ -39,6 +39,9 @@ python-dotenv==1.1.0
 tiktoken>=0.5.2
 tokenizers==0.21.1
 
+# Language Detection and Translation
+langdetect>=1.0.9
+
 # Database
 sqlalchemy==2.0.41
 

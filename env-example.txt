@@ -30,4 +30,12 @@ ENABLE_USER_LIMITS=true
 # - John Doe: 10 petroleum keywords per day
 # - Anonymous: 1 petroleum keyword per day  
 # - System extracts petroleum terms like: drilling, fracking, reservoir, production, etc.
-# - Usage tracked by keywords per query, not number of queries 
+# - Usage tracked by keywords per query, not number of queries
+
+# Multilingual Configuration (NEW)
+MULTILINGUAL_ENABLED=true
+MULTILINGUAL_SUPPORTED_LANGUAGES=ar,fr,en,de
+MULTILINGUAL_DEFAULT_LANGUAGE=en
+MULTILINGUAL_TRANSLATION_MODEL=llama3.2:latest
+MULTILINGUAL_ENABLE_MONITORING=true
+MULTILINGUAL_MAX_RETRIES=3 
