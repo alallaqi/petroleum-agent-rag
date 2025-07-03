@@ -21,14 +21,25 @@ spec_user = importlib.util.spec_from_file_location("user_manager", "user_manager
 user_module = importlib.util.module_from_spec(spec_user)
 spec_user.loader.exec_module(user_module)
 
-# Get the search function and user manager
+# Load the language_translator.py module
+spec_translator = importlib.util.spec_from_file_location("language_translator", "language_translator.py")
+translator_module = importlib.util.module_from_spec(spec_translator)
+spec_translator.loader.exec_module(translator_module)
+
+# Get the search function, user manager, and language translator
 search_function = getattr(retrieval_module, 'search_petroleum_knowledge')
 UserManager = getattr(user_module, 'UserManager')
+LanguageTranslator = getattr(translator_module, 'LanguageTranslator')
 
 # Initialize user manager
 if "user_manager" not in st.session_state:
     st.session_state.user_manager = UserManager()
 user_manager = st.session_state.user_manager
+
+# Initialize language translator
+if "language_translator" not in st.session_state:
+    st.session_state.language_translator = LanguageTranslator()
+language_translator = st.session_state.language_translator
 
 # Initialize Ollama LLM for response generation
 llm_model = os.getenv("OLLAMA_LLM_MODEL", "llama3.2:latest")
@@ -50,6 +61,19 @@ Please provide a detailed, technical answer based on the retrieved information. 
 
 Answer:""")
 
+def contains_arabic(text):
+    """Check if text contains Arabic characters"""
+    if not text:
+        return False
+    arabic_range = range(0x0600, 0x06FF + 1)  # Arabic Unicode range
+    return any(ord(char) in arabic_range for char in text)
+
+def get_text_direction_class(text):
+    """Determine the appropriate CSS class for text direction"""
+    if contains_arabic(text):
+        return "arabic-content"
+    return "ltr-text"
+
 def format_search_results(results):
     """Format search results into a readable context string"""
     if not results:
@@ -65,27 +89,41 @@ def format_search_results(results):
     return "\n".join(context_parts)
 
 def generate_response(question: str):
-    """Generate AI response using retrieved petroleum knowledge"""
+    """Generate AI response using retrieved petroleum knowledge with multilingual support"""
     try:
-        # Search the knowledge base
-        search_results = search_function(question, k=5)
+        # PREPROCESSING: Language detection and translation to English
+        english_question, detected_language = language_translator.process_query(question)
+        
+        # Log language detection for user visibility
+        language_info = {
+            'original_question': question,
+            'english_question': english_question,
+            'detected_language': detected_language,
+            'language_name': language_translator.supported_languages.get(detected_language, 'Unknown')
+        }
+        
+        # Search the knowledge base with English question
+        search_results = search_function(english_question, k=5)
         
         # Format context
         context = format_search_results(search_results)
         
-        # Generate response
+        # Generate response in English
         formatted_prompt = response_prompt.format(
             context=context,
-            question=question
+            question=english_question
         )
         
-        response = llm.invoke(formatted_prompt)
+        english_response = llm.invoke(formatted_prompt)
         
-        return response, search_results
+        # POSTPROCESSING: Translate response back to original language
+        final_response = language_translator.process_response(english_response, detected_language)
+        
+        return final_response, search_results, language_info
         
     except Exception as e:
         st.error(f"Error generating response: {e}")
-        return "I apologize, but I encountered an error while processing your question.", []
+        return "I apologize, but I encountered an error while processing your question.", [], None
 
 # Streamlit App Configuration
 st.set_page_config(
@@ -180,6 +218,44 @@ st.markdown("""
         border: 1px solid #e9ecef;
         color: #6c757d;
     }
+    
+    /* RTL Support for Arabic Text */
+    .rtl-text {
+        direction: rtl;
+        text-align: right;
+        unicode-bidi: embed;
+        font-family: 'Segoe UI', 'Arial Unicode MS', 'Tahoma', sans-serif;
+    }
+    
+    .ltr-text {
+        direction: ltr;
+        text-align: left;
+        unicode-bidi: embed;
+    }
+    
+    /* Arabic text styling */
+    .arabic-content {
+        direction: rtl;
+        text-align: right;
+        unicode-bidi: embed;
+        font-family: 'Segoe UI', 'Arabic UI', 'Tahoma', sans-serif;
+        line-height: 1.6;
+        font-size: 1.1em;
+    }
+    
+    /* Mixed content container */
+    .mixed-content {
+        direction: ltr; /* Default direction */
+        text-align: left;
+    }
+    
+    .mixed-content .arabic-text {
+        direction: rtl;
+        text-align: right;
+        unicode-bidi: embed;
+        display: inline-block;
+        width: 100%;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -247,6 +323,62 @@ with st.sidebar:
                 else:
                     st.error("❌ Failed to switch user")
     
+    # Multilingual support info
+    st.markdown("""
+    <div class="sidebar-section">
+        <h4>🌍 Multilingual Support</h4>
+        <p><strong>Ask questions in:</strong></p>
+        <ul>
+            <li>🇺🇸 <strong>English:</strong> What is hydraulic fracturing?</li>
+            <li>🇸🇦 <strong>Arabic:</strong> ما هو التكسير الهيدروليكي؟</li>
+            <li>🇫🇷 <strong>French:</strong> Qu'est-ce que la fracturation?</li>
+            <li>🇩🇪 <strong>German:</strong> Was ist hydraulisches Fracking?</li>
+        </ul>
+        <p><em>AI automatically detects and translates!</em></p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Translation monitoring stats
+    if 'language_translator' in st.session_state:
+        translator = st.session_state.language_translator
+        config = translator.get_configuration()
+        monitoring_stats = translator.get_monitoring_stats()
+        
+        st.markdown("""
+        <div class="sidebar-section">
+            <h4>📊 Translation Monitoring</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Display key metrics
+        performance = monitoring_stats['performance']
+        language_usage = monitoring_stats['language_usage']
+        
+        # Metrics in compact format
+        col_trans1, col_trans2 = st.columns(2)
+        with col_trans1:
+            st.metric("Queries", performance['total_queries_processed'])
+            st.metric("Success Rate", f"{performance['success_rate_percentage']:.1f}%")
+        with col_trans2:
+            st.metric("Translations", performance['total_translations_performed'])
+            st.metric("Avg Time", f"{performance['average_translation_time_seconds']:.2f}s")
+        
+        # Language distribution
+        if language_usage['queries_by_language']:
+            st.markdown("**Language Distribution:**")
+            for lang, count in language_usage['queries_by_language'].items():
+                lang_name = translator.supported_languages.get(lang, lang)
+                percentage = (count / performance['total_queries_processed'] * 100) if performance['total_queries_processed'] > 0 else 0
+                st.write(f"{lang_name}: {count} ({percentage:.1f}%)")
+    
+    else:
+        st.markdown("""
+        <div class="sidebar-section">
+            <h4>⚠️ Translation Status</h4>
+            <p><em>Translator not initialized</em></p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     # Keyword extraction info
     st.markdown("""
     <div class="sidebar-section">
@@ -272,14 +404,14 @@ with col1:
     with st.expander("💡 **Try These Example Questions**", expanded=False):
         st.markdown("**Click any question to ask it:**")
         
-        # Better example questions
+        # Better example questions (including multilingual examples)
         example_questions = [
             "What is hydraulic fracturing?",
             "How does oil drilling work?", 
             "Explain reservoir engineering basics",
-            "What are unconventional gas resources?",
-            "Describe well completion techniques",
-            "How do you optimize production rates?"
+            "ما هو التكسير الهيدروليكي؟",  # Arabic: What is hydraulic fracturing?
+            "Qu'est-ce que la fracturation hydraulique?",  # French: What is hydraulic fracturing?
+            "Was ist hydraulisches Fracking?"  # German: What is hydraulic fracking?
         ]
         
         # Display in 2 columns for better layout
@@ -358,9 +490,32 @@ if query:
             # Add user message to chat
             st.session_state.messages.append({"role": "user", "content": query})
             
-            # Generate response
+            # Generate response with multilingual support
             with st.spinner("🔍 Searching petroleum knowledge base..."):
-                response, search_results = generate_response(query)
+                response, search_results, language_info = generate_response(query)
+            
+            # Show language detection info if available
+            if language_info and language_info['detected_language'] != 'en':
+                # Create info message with proper text direction for original query
+                original_query = language_info['original_question']
+                query_direction_class = get_text_direction_class(original_query)
+                
+                st.info(f"""
+                🌍 **Language Detected:** {language_info['language_name']} ({language_info['detected_language']})
+                
+                *(Your question was translated to English for processing, and the response was translated back)*
+                """)
+                
+                # Show original query with proper text direction if it's Arabic
+                if contains_arabic(original_query):
+                    st.markdown(f"""
+                    <div style="background: #e7f3ff; padding: 0.5rem; border-radius: 4px; margin: 0.5rem 0;">
+                        <strong>Your original question:</strong><br>
+                        <div class="{query_direction_class}" style="margin-top: 0.5rem;">
+                            {original_query}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
             
             # Add assistant response to chat
             full_response = response
@@ -370,7 +525,8 @@ if query:
             st.session_state.messages.append({
                 "role": "assistant", 
                 "content": full_response,
-                "search_results": search_results
+                "search_results": search_results,
+                "language_info": language_info
             })
             
             # Trigger a rerun to show the updated conversation and stats
@@ -383,7 +539,26 @@ if st.session_state.messages:
     st.markdown("### 💬 Conversation")
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.write(message["content"])
+            # Check if message content contains Arabic and apply appropriate styling
+            content = message["content"]
+            text_direction_class = get_text_direction_class(content)
+            
+            if contains_arabic(content):
+                # Display Arabic content with RTL styling
+                st.markdown(f"""
+                <div class="{text_direction_class}">
+                    {content}
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                # Display regular content normally
+                st.write(content)
+            
+            # Show language info if available (for assistant messages)
+            if message["role"] == "assistant" and "language_info" in message and message["language_info"]:
+                lang_info = message["language_info"]
+                if lang_info['detected_language'] != 'en':
+                    st.caption(f"🌍 Translated from {lang_info['language_name']} ({lang_info['detected_language']})")
             
             # Show search results if available (for assistant messages)
             if message["role"] == "assistant" and "search_results" in message and message["search_results"]:
