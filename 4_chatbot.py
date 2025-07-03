@@ -89,39 +89,80 @@ def generate_response(question: str):
 st.set_page_config(
     page_title="🛢️ Petroleum Engineering Assistant",
     page_icon="🛢️",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # Custom CSS for better styling
 st.markdown("""
 <style>
     .main-header {
-        background: linear-gradient(90deg, #FF6B35, #F7931E);
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
         color: white;
-        padding: 1rem;
-        border-radius: 10px;
+        padding: 2rem;
+        border-radius: 15px;
         text-align: center;
         margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
     .user-info {
-        background-color: #f0f8ff;
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #FF6B35;
-        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    }
+    .user-info h4 {
+        margin: 0 0 1rem 0;
+        font-size: 1.2rem;
+    }
+    .user-info p {
+        margin: 0.3rem 0;
+        font-size: 0.9rem;
     }
     .keyword-info {
-        background-color: #fff8e1;
-        padding: 0.5rem;
-        border-radius: 6px;
-        border-left: 3px solid #ffa726;
-        margin: 0.5rem 0;
-    }
-    .search-results {
-        background-color: #f5f5f5;
+        background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
         padding: 1rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+        border-left: 4px solid #e17055;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .example-button {
+        background: linear-gradient(135deg, #74b9ff, #0984e3);
+        color: white;
+        border: none;
+        padding: 0.8rem 1rem;
         border-radius: 8px;
-        margin-top: 1rem;
+        margin: 0.3rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .example-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .sidebar-section {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #6c5ce7;
+    }
+    .chat-input {
+        border-radius: 25px;
+        border: 2px solid #ddd;
+        padding: 1rem;
+    }
+    .stButton > button {
+        border-radius: 20px;
+        transition: all 0.3s ease;
+    }
+    .stSelectbox > div > div {
+        border-radius: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -129,8 +170,8 @@ st.markdown("""
 # Header
 st.markdown("""
 <div class="main-header">
-    <h1>🛢️ Petroleum Engineering Assistant</h1>
-    <p>AI-powered knowledge system with keyword-based usage limits</p>
+    <h1>🛢️ Petroleum Engineering AI Assistant</h1>
+    <p>Intelligent keyword-based usage system for fair access to petroleum expertise</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -140,7 +181,7 @@ if "messages" not in st.session_state:
 
 # Sidebar for user management
 with st.sidebar:
-    st.header("👤 User Management")
+    st.markdown("### 👤 User Management")
     
     # Get current user info
     current_user = user_manager.get_current_user()
@@ -149,18 +190,17 @@ with st.sidebar:
     if current_user:
         st.markdown(f"""
         <div class="user-info">
-            <h4>Current User: {current_user['name']}</h4>
+            <h4>🔑 {current_user['name']}</h4>
             <p><strong>Type:</strong> {current_user['user_type'].title()}</p>
-            <p><strong>Keyword Limit:</strong> {user_stats['daily_keyword_limit']} per day</p>
-            <p><strong>Keywords Used:</strong> {user_stats['current_keyword_usage']}</p>
-            <p><strong>Keywords Remaining:</strong> {user_stats['keywords_remaining']}</p>
-            <p><strong>Queries Today:</strong> {user_stats['total_queries_today']}</p>
-            <p><strong>Last Reset:</strong> {user_stats['last_reset']}</p>
+            <p><strong>Daily Limit:</strong> {user_stats['daily_keyword_limit']} keywords</p>
+            <p><strong>Used Today:</strong> {user_stats['current_keyword_usage']}</p>
+            <p><strong>Remaining:</strong> {user_stats['keywords_remaining']}</p>
+            <p><strong>Queries:</strong> {user_stats['total_queries_today']}</p>
         </div>
         """, unsafe_allow_html=True)
         
         # User switching
-        st.subheader("Switch User")
+        st.markdown("**🔄 Switch User**")
         all_users = user_manager.get_all_users()
         user_options = {user['name']: user['user_id'] for user in all_users}
         
@@ -170,48 +210,80 @@ with st.sidebar:
             index=list(user_options.values()).index(current_user['user_id'])
         )
         
-        if st.button("Switch User"):
+        if st.button("🔀 Switch User", use_container_width=True):
             selected_user_id = user_options[selected_user_name]
             if user_manager.switch_user(selected_user_id):
-                st.success(f"Switched to {selected_user_name}")
+                st.success(f"✅ Switched to {selected_user_name}")
                 st.rerun()
             else:
-                st.error("Failed to switch user")
+                st.error("❌ Failed to switch user")
     
     # Keyword extraction info
-    st.subheader("📊 How Keywords Work")
     st.markdown("""
-    **Keywords are petroleum-related terms like:**
-    - drilling, fracking, hydraulic
-    - reservoir, production, completion
-    - oil, gas, petroleum, shale
-    - wellbore, casing, formation
-    - etc.
-    
-    **Usage is based on keywords per query, not queries themselves!**
-    """)
+    <div class="sidebar-section">
+        <h4>📊 How Keywords Work</h4>
+        <p><strong>Petroleum keywords include:</strong></p>
+        <ul>
+            <li>🔧 <strong>Drilling:</strong> drilling, wellbore, casing</li>
+            <li>💥 <strong>Fracking:</strong> hydraulic, fracturing, proppant</li>
+            <li>⛽ <strong>Production:</strong> oil, gas, reservoir</li>
+            <li>🏔️ <strong>Geology:</strong> shale, formation, rock</li>
+        </ul>
+        <p><em>Non-petroleum questions are FREE!</em></p>
+    </div>
+    """, unsafe_allow_html=True)
 
-# Main chat interface
-st.header("💬 Ask Your Petroleum Engineering Questions")
+# Main content area
+col1, col2 = st.columns([2, 1])
 
-# Example questions
-with st.expander("📚 Example Questions (Click to try)"):
-    example_questions = [
-        "What is hydraulic fracturing and how does it work?",
-        "Explain different types of drilling techniques",
-        "How do you optimize oil production from reservoirs?",
-        "What are unconventional gas resources?",
-        "Describe well completion methods"
-    ]
+with col1:
+    st.markdown("### 💬 Ask Your Questions")
     
-    cols = st.columns(2)
-    for i, question in enumerate(example_questions):
-        with cols[i % 2]:
-            if st.button(question, key=f"example_{i}"):
-                st.session_state.example_query = question
+    # Example questions in a more compact layout
+    with st.expander("💡 **Try These Example Questions**", expanded=False):
+        st.markdown("**Click any question to ask it:**")
+        
+        # Better example questions
+        example_questions = [
+            "What is hydraulic fracturing?",
+            "How does oil drilling work?", 
+            "Explain reservoir engineering basics",
+            "What are unconventional gas resources?",
+            "Describe well completion techniques",
+            "How do you optimize production rates?"
+        ]
+        
+        # Display in 2 columns for better layout
+        col_a, col_b = st.columns(2)
+        for i, question in enumerate(example_questions):
+            with col_a if i % 2 == 0 else col_b:
+                if st.button(f"🔍 {question}", key=f"example_{i}", use_container_width=True):
+                    st.session_state.example_query = question
+
+with col2:
+    st.markdown("### 📈 Usage Statistics")
+    
+    if current_user:
+        # Progress bar for keyword usage
+        usage_percentage = (user_stats['current_keyword_usage'] / user_stats['daily_keyword_limit']) * 100 if user_stats['daily_keyword_limit'] > 0 else 0
+        
+        st.metric(
+            label="Keywords Used Today",
+            value=f"{user_stats['current_keyword_usage']}/{user_stats['daily_keyword_limit']}",
+            delta=f"{usage_percentage:.1f}% of daily limit"
+        )
+        
+        st.progress(usage_percentage / 100)
+        
+        if user_stats['keywords_remaining'] == 0:
+            st.error("🚫 Daily limit reached!")
+        elif user_stats['keywords_remaining'] <= 2:
+            st.warning("⚠️ Low on keywords!")
+        else:
+            st.success("✅ Good to go!")
 
 # Chat input
-query = st.chat_input("Ask your petroleum engineering question...")
+query = st.chat_input("🔍 Ask your petroleum engineering question...", key="main_input")
 
 # Handle example question selection
 if hasattr(st.session_state, 'example_query'):
@@ -225,13 +297,14 @@ if query:
     extracted_keywords = user_manager.extract_keywords(query)
     
     # Display keyword information
-    st.markdown(f"""
-    <div class="keyword-info">
-        <strong>🔍 Detected Keywords:</strong> {', '.join(extracted_keywords) if extracted_keywords else 'None'}
-        <br><strong>📊 Keywords Needed:</strong> {keywords_needed}
-        <br><strong>⚡ Keywords Remaining:</strong> {keywords_remaining if keywords_remaining != float('inf') else 'Unlimited'}
-    </div>
-    """, unsafe_allow_html=True)
+    if extracted_keywords or keywords_needed > 0:
+        st.markdown(f"""
+        <div class="keyword-info">
+            <strong>🔍 Detected Keywords:</strong> {', '.join(extracted_keywords) if extracted_keywords else 'None'}
+            <br><strong>📊 Keywords Needed:</strong> {keywords_needed}
+            <br><strong>⚡ Keywords Remaining:</strong> {keywords_remaining if keywords_remaining != float('inf') else 'Unlimited'}
+        </div>
+        """, unsafe_allow_html=True)
     
     if not can_use:
         st.error(f"""
@@ -241,7 +314,7 @@ if query:
         - You only have **{keywords_remaining} keywords** remaining today
         - Your daily limit resets at midnight UTC
         
-        Try asking simpler questions with fewer petroleum terms, or switch to a user with higher limits.
+        💡 **Try asking simpler questions** with fewer petroleum terms, or switch to a user with higher limits.
         """)
     else:
         # Add user message to chat
@@ -262,7 +335,7 @@ if query:
                 
                 # Show search results in expandable section
                 if search_results:
-                    with st.expander(f"📖 View Source Documents ({len(search_results)} found)"):
+                    with st.expander(f"📖 **View Source Documents** ({len(search_results)} found)"):
                         for i, result in enumerate(search_results, 1):
                             st.markdown(f"""
                             **Source {i}** (Relevance: {result['relevance_score']:.1%})
@@ -277,26 +350,27 @@ if query:
             # Add assistant response to chat
             st.session_state.messages.append({"role": "assistant", "content": response})
         else:
-            st.error("Failed to process query due to keyword limit.")
+            st.error("❌ Failed to process query due to keyword limit.")
 
 # Display chat history
 if st.session_state.messages:
-    st.subheader("📝 Chat History")
+    st.markdown("### 📝 Chat History")
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
 # Clear chat button
 if st.session_state.messages:
-    if st.button("🗑️ Clear Chat History", type="secondary"):
+    if st.button("🗑️ Clear Chat History", type="secondary", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style="text-align: center; color: #666; margin-top: 2rem;">
-    🛢️ Petroleum Engineering Assistant | Powered by Ollama + ChromaDB + Streamlit
-    <br>Keyword-based usage limits ensure fair access to AI resources
+<div style="text-align: center; color: #666; margin-top: 2rem; padding: 1rem;">
+    🛢️ <strong>Petroleum Engineering AI Assistant</strong><br>
+    Powered by Ollama + ChromaDB + Streamlit<br>
+    <em>Keyword-based usage limits ensure fair access to AI resources</em>
 </div>
 """, unsafe_allow_html=True) 

@@ -4,10 +4,39 @@
       "name": "John Doe",
       "user_type": "registered",
       "daily_keyword_limit": 10,
-      "current_keyword_usage": 0,
-      "last_reset": "2024-12-29",
+      "current_keyword_usage": 2,
+      "last_reset": "2025-07-03",
       "active": true,
-      "query_history": []
+      "query_history": [
+        {
+          "timestamp": "2025-07-03T00:39:56.362728+00:00",
+          "query": "hi",
+          "keywords_used": 0,
+          "keywords_found": []
+        },
+        {
+          "timestamp": "2025-07-03T00:40:13.897767+00:00",
+          "query": "racking,",
+          "keywords_used": 0,
+          "keywords_found": []
+        },
+        {
+          "timestamp": "2025-07-03T00:40:31.687133+00:00",
+          "query": "fracking",
+          "keywords_used": 1,
+          "keywords_found": [
+            "fracking"
+          ]
+        },
+        {
+          "timestamp": "2025-07-03T00:46:51.122050+00:00",
+          "query": "what is fracturing",
+          "keywords_used": 1,
+          "keywords_found": [
+            "fracturing"
+          ]
+        }
+      ]
     },
     "anonymous": {
       "name": "Anonymous User",
