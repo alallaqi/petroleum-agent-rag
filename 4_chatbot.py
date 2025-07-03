@@ -26,7 +26,9 @@ search_function = getattr(retrieval_module, 'search_petroleum_knowledge')
 UserManager = getattr(user_module, 'UserManager')
 
 # Initialize user manager
-user_manager = UserManager()
+if "user_manager" not in st.session_state:
+    st.session_state.user_manager = UserManager()
+user_manager = st.session_state.user_manager
 
 # Initialize Ollama LLM for response generation
 llm_model = os.getenv("OLLAMA_LLM_MODEL", "llama3.2:latest")
@@ -97,72 +99,86 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-header {
-        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        background: #ff4b4b;
         color: white;
         padding: 2rem;
-        border-radius: 15px;
+        border-radius: 8px;
         text-align: center;
         margin-bottom: 2rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 1px solid #e0e4e8;
     }
     .user-info {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
+        background: #f0f2f6;
         padding: 1.5rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border: 1px solid #e0e4e8;
     }
     .user-info h4 {
         margin: 0 0 1rem 0;
         font-size: 1.2rem;
+        color: #262730;
     }
     .user-info p {
         margin: 0.3rem 0;
         font-size: 0.9rem;
+        color: #262730;
     }
-    .keyword-info {
-        background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
-        padding: 1rem;
-        border-radius: 10px;
-        margin: 1rem 0;
-        border-left: 4px solid #e17055;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .example-button {
-        background: linear-gradient(135deg, #74b9ff, #0984e3);
-        color: white;
-        border: none;
-        padding: 0.8rem 1rem;
+    .user-switching {
+        background: #f0f2f6;
+        padding: 1.5rem;
         border-radius: 8px;
-        margin: 0.3rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 0.9rem;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+        border: 1px solid #e0e4e8;
     }
-    .example-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    .user-switching h4 {
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+        color: #262730;
+    }
+    .user-switching p {
+        margin: 0.3rem 0;
+        font-size: 0.9rem;
+        color: #262730;
     }
     .sidebar-section {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 10px;
+        background: #f0f2f6;
+        padding: 1.5rem;
+        border-radius: 8px;
         margin-bottom: 1rem;
-        border-left: 4px solid #6c5ce7;
+        border: 1px solid #e0e4e8;
     }
-    .chat-input {
-        border-radius: 25px;
-        border: 2px solid #ddd;
+    .sidebar-section h4 {
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+        color: #262730;
+    }
+    .sidebar-section p {
+        margin: 0.3rem 0;
+        font-size: 0.9rem;
+        color: #262730;
+    }
+    .sidebar-section ul {
+        margin: 1rem 0;
+        padding-left: 1.2rem;
+    }
+    .sidebar-section li {
+        margin: 0.5rem 0;
+        color: #262730;
+        font-size: 0.9rem;
+    }
+    .sidebar-section em {
+        color: #666;
+        font-style: italic;
+    }
+    .keyword-info {
+        background: #f8f9fa;
         padding: 1rem;
-    }
-    .stButton > button {
-        border-radius: 20px;
-        transition: all 0.3s ease;
-    }
-    .stSelectbox > div > div {
-        border-radius: 10px;
+        border-radius: 8px;
+        margin: 1rem 0;
+        border-left: 3px solid #dee2e6;
+        border: 1px solid #e9ecef;
+        color: #6c757d;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -178,45 +194,58 @@ st.markdown("""
 # Initialize session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "conversation_history" not in st.session_state:
+    st.session_state.conversation_history = []
 
 # Sidebar for user management
 with st.sidebar:
     st.markdown("### 👤 User Management")
     
-    # Get current user info
+    # Get current user info with fresh stats
     current_user = user_manager.get_current_user()
-    user_stats = user_manager.get_user_stats()
+    fresh_user_stats = user_manager.get_user_stats()  # Always get fresh stats
     
     if current_user:
         st.markdown(f"""
         <div class="user-info">
             <h4>🔑 {current_user['name']}</h4>
             <p><strong>Type:</strong> {current_user['user_type'].title()}</p>
-            <p><strong>Daily Limit:</strong> {user_stats['daily_keyword_limit']} keywords</p>
-            <p><strong>Used Today:</strong> {user_stats['current_keyword_usage']}</p>
-            <p><strong>Remaining:</strong> {user_stats['keywords_remaining']}</p>
-            <p><strong>Queries:</strong> {user_stats['total_queries_today']}</p>
+            <p><strong>Daily Limit:</strong> {fresh_user_stats['daily_keyword_limit']} keywords</p>
+            <p><strong>Used Today:</strong> {fresh_user_stats['current_keyword_usage']}</p>
+            <p><strong>Remaining:</strong> {fresh_user_stats['keywords_remaining']}</p>
+            <p><strong>Queries:</strong> {fresh_user_stats['total_queries_today']}</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # User switching
-        st.markdown("**🔄 Switch User**")
+        # User switching section
         all_users = user_manager.get_all_users()
         user_options = {user['name']: user['user_id'] for user in all_users}
+        
+        st.markdown("""
+        <div class="user-switching">
+            <h4>🔄 Switch User</h4>
+            <p>Select a different user profile:</p>
+        </div>
+        """, unsafe_allow_html=True)
         
         selected_user_name = st.selectbox(
             "Select User:",
             options=list(user_options.keys()),
-            index=list(user_options.values()).index(current_user['user_id'])
+            index=list(user_options.values()).index(current_user['user_id']),
+            label_visibility="collapsed"
         )
         
-        if st.button("🔀 Switch User", use_container_width=True):
-            selected_user_id = user_options[selected_user_name]
-            if user_manager.switch_user(selected_user_id):
-                st.success(f"✅ Switched to {selected_user_name}")
-                st.rerun()
-            else:
-                st.error("❌ Failed to switch user")
+        # Only show switch button if different user is selected
+        if selected_user_name != current_user['name']:
+            if st.button("🔀 Switch User", use_container_width=True):
+                selected_user_id = user_options[selected_user_name]
+                if user_manager.switch_user(selected_user_id):
+                    # Update session state to persist the change
+                    st.session_state.user_manager = user_manager
+                    st.success(f"✅ Switched to {selected_user_name}")
+                    st.rerun()
+                else:
+                    st.error("❌ Failed to switch user")
     
     # Keyword extraction info
     st.markdown("""
@@ -263,24 +292,31 @@ with col1:
 with col2:
     st.markdown("### 📈 Usage Statistics")
     
+    # Create a placeholder for stats that can update without full refresh
+    stats_placeholder = st.empty()
+    
     if current_user:
+        # Get fresh stats in case they were just updated
+        fresh_stats = user_manager.get_user_stats()
+        
         # Progress bar for keyword usage
-        usage_percentage = (user_stats['current_keyword_usage'] / user_stats['daily_keyword_limit']) * 100 if user_stats['daily_keyword_limit'] > 0 else 0
+        usage_percentage = (fresh_stats['current_keyword_usage'] / fresh_stats['daily_keyword_limit']) * 100 if fresh_stats['daily_keyword_limit'] > 0 else 0
         
-        st.metric(
-            label="Keywords Used Today",
-            value=f"{user_stats['current_keyword_usage']}/{user_stats['daily_keyword_limit']}",
-            delta=f"{usage_percentage:.1f}% of daily limit"
-        )
-        
-        st.progress(usage_percentage / 100)
-        
-        if user_stats['keywords_remaining'] == 0:
-            st.error("🚫 Daily limit reached!")
-        elif user_stats['keywords_remaining'] <= 2:
-            st.warning("⚠️ Low on keywords!")
-        else:
-            st.success("✅ Good to go!")
+        with stats_placeholder.container():
+            st.metric(
+                label="Keywords Used Today",
+                value=f"{fresh_stats['current_keyword_usage']}/{fresh_stats['daily_keyword_limit']}",
+                delta=f"{usage_percentage:.1f}% of daily limit"
+            )
+            
+            st.progress(usage_percentage / 100)
+            
+            if fresh_stats['keywords_remaining'] == 0:
+                st.error("🚫 Daily limit reached!")
+            elif fresh_stats['keywords_remaining'] <= 2:
+                st.warning("⚠️ Low on keywords!")
+            else:
+                st.success("✅ Good to go!")
 
 # Chat input
 query = st.chat_input("🔍 Ask your petroleum engineering question...", key="main_input")
@@ -317,47 +353,52 @@ if query:
         💡 **Try asking simpler questions** with fewer petroleum terms, or switch to a user with higher limits.
         """)
     else:
-        # Add user message to chat
-        st.session_state.messages.append({"role": "user", "content": query})
-        
         # Use keywords and process query
         if user_manager.use_keywords(query):
-            # Display user message
-            with st.chat_message("user"):
-                st.write(query)
+            # Add user message to chat
+            st.session_state.messages.append({"role": "user", "content": query})
             
-            # Generate and display assistant response
-            with st.chat_message("assistant"):
-                with st.spinner("🔍 Searching petroleum knowledge base..."):
-                    response, search_results = generate_response(query)
-                
-                st.write(response)
-                
-                # Show search results in expandable section
-                if search_results:
-                    with st.expander(f"📖 **View Source Documents** ({len(search_results)} found)"):
-                        for i, result in enumerate(search_results, 1):
-                            st.markdown(f"""
-                            **Source {i}** (Relevance: {result['relevance_score']:.1%})
-                            
-                            📄 **{result['chunk_info']}**
-                            
-                            {result['content'][:300]}{'...' if len(result['content']) > 300 else ''}
-                            
-                            ---
-                            """)
+            # Generate response
+            with st.spinner("🔍 Searching petroleum knowledge base..."):
+                response, search_results = generate_response(query)
             
             # Add assistant response to chat
-            st.session_state.messages.append({"role": "assistant", "content": response})
+            full_response = response
+            if search_results:
+                full_response += f"\n\n**Sources Found:** {len(search_results)} relevant documents"
+            
+            st.session_state.messages.append({
+                "role": "assistant", 
+                "content": full_response,
+                "search_results": search_results
+            })
+            
+            # Trigger a rerun to show the updated conversation and stats
+            st.rerun()
         else:
             st.error("❌ Failed to process query due to keyword limit.")
 
 # Display chat history
 if st.session_state.messages:
-    st.markdown("### 📝 Chat History")
+    st.markdown("### 💬 Conversation")
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
+            
+            # Show search results if available (for assistant messages)
+            if message["role"] == "assistant" and "search_results" in message and message["search_results"]:
+                search_results = message["search_results"]
+                with st.expander(f"📖 **View Source Documents** ({len(search_results)} found)"):
+                    for i, result in enumerate(search_results, 1):
+                        st.markdown(f"""
+                        **Source {i}** (Relevance: {result['relevance_score']:.1%})
+                        
+                        📄 **{result['chunk_info']}**
+                        
+                        {result['content'][:300]}{'...' if len(result['content']) > 300 else ''}
+                        
+                        ---
+                        """)
 
 # Clear chat button
 if st.session_state.messages:
