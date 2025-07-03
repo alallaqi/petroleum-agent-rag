@@ -3,18 +3,20 @@
     "john_doe": {
       "name": "John Doe",
       "user_type": "registered",
-      "daily_search_limit": 10,
-      "current_usage": 1,
-      "last_reset": "2025-07-03",
-      "active": true
+      "daily_keyword_limit": 10,
+      "current_keyword_usage": 0,
+      "last_reset": "2024-12-29",
+      "active": true,
+      "query_history": []
     },
     "anonymous": {
       "name": "Anonymous User",
       "user_type": "anonymous",
-      "daily_search_limit": 1,
-      "current_usage": 1,
-      "last_reset": "2025-07-03",
-      "active": true
+      "daily_keyword_limit": 1,
+      "current_keyword_usage": 0,
+      "last_reset": "2024-12-29",
+      "active": true,
+      "query_history": []
     }
   },
   "settings": {
