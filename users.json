@@ -7,7 +7,50 @@
       "current_keyword_usage": 0,
       "last_reset": "2025-07-03",
       "active": true,
-      "query_history": []
+      "query_history": [
+        {
+          "timestamp": "2025-07-03T02:33:46.263196+00:00",
+          "query": "wass ist fructuri",
+          "keywords_used": 0,
+          "keywords_found": []
+        },
+        {
+          "timestamp": "2025-07-03T02:35:07.700611+00:00",
+          "query": "\u0648\u0639\u0633\u0647",
+          "keywords_used": 0,
+          "keywords_found": []
+        },
+        {
+          "timestamp": "2025-07-03T02:40:27.905217+00:00",
+          "query": "\u0645\u0627 \u0647\u0648 \u0627\u0644\u062a\u0643\u0633\u064a\u0631 \u0627\u0644\u0647\u064a\u062f\u0631\u0648\u0644\u064a\u0643\u064a\u061f",
+          "keywords_used": 0,
+          "keywords_found": []
+        },
+        {
+          "timestamp": "2025-07-03T02:40:34.791029+00:00",
+          "query": "\u0645\u0627 \u0647\u0648 \u0627\u0644\u062a\u0643\u0633\u064a\u0631 \u0627\u0644\u0647\u064a\u062f\u0631\u0648\u0644\u064a\u0643\u064a\u061f",
+          "keywords_used": 0,
+          "keywords_found": []
+        },
+        {
+          "timestamp": "2025-07-03T02:44:14.048509+00:00",
+          "query": "\u0645\u0627 \u0647\u0648 \u0627\u0644\u062a\u0643\u0633\u064a\u0631 \u0627\u0644\u0647\u064a\u062f\u0631\u0648\u0644\u064a\u0643\u064a\u061f",
+          "keywords_used": 0,
+          "keywords_found": []
+        },
+        {
+          "timestamp": "2025-07-03T02:45:41.179706+00:00",
+          "query": "hi",
+          "keywords_used": 0,
+          "keywords_found": []
+        },
+        {
+          "timestamp": "2025-07-03T02:46:25.630674+00:00",
+          "query": "how are u",
+          "keywords_used": 0,
+          "keywords_found": []
+        }
+      ]
     },
     "anonymous": {
       "name": "Anonymous User",
